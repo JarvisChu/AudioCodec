@@ -36,5 +36,12 @@ int main()
                             sample_rate_out, sample_bits_out, channels_out);
     std::cout << "sample_rate_out: " << sample_rate_out << ", sample_bits_out: " << sample_bits_out << ", channels_out: " << channels_out << std::endl;
 
+
+    // test PCMCodec::AbstractChannel2File
+    PCMCodec::AbstractChannel2File("/Users/jarvischu/code/github/PCMCodec/test/test_48000_16_2.pcm",
+                                   "/Users/jarvischu/code/github/PCMCodec/test/test_48000_16_2_left.pcm",
+                                   "/Users/jarvischu/code/github/PCMCodec/test/test_48000_16_2_right.pcm"
+                                   );
+
     return 0;
 }

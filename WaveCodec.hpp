@@ -274,8 +274,8 @@ namespace WaveCodec {
         }
 
         if ((uint32_t)file_size != riff_chunk_size + sizeof(fourcc) + sizeof(riff_chunk_size)) {
-            printf("invalid wave file, size not match, %s\n", waveFilePath.c_str());
-            return false;
+            printf("invalid wave file, size not match, error ignored, %s\n", waveFilePath.c_str());
+            //return false;
         }
 
         // Chunk RIFF form type
@@ -317,8 +317,9 @@ namespace WaveCodec {
                     int len = (sub_chunk_size <= 2048) ? sub_chunk_size:2048;
                     read_cnt = fread(buff, sizeof(uint8_t), len, fpWav);
                     if (read_cnt != len) {
-                        printf("invalid wave file, %s\n", waveFilePath.c_str());
-                        return false;
+                        printf("invalid wave file, error ignored, %s\n", waveFilePath.c_str());
+                        fwrite(buff, sizeof(uint8_t), read_cnt, fpPCM);
+                        break;
                     }
 
                     fwrite(buff, sizeof(uint8_t), len, fpPCM);

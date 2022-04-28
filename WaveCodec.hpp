@@ -375,7 +375,7 @@ namespace WaveCodec {
                 }
 
                 uint16_t bits_per_sample = 0; // 单个采样位深(Bits Per Sample)，可选8、16或32
-                read_cnt = fread(&block_align, sizeof(uint16_t), 1, fpWav);
+                read_cnt = fread(&bits_per_sample, sizeof(uint16_t), 1, fpWav);
                 if (read_cnt != 1) {
                     printf("invalid wave file, %s\n", waveFilePath.c_str());
                     return false;

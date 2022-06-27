@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.19)
-project(PCMCodec)
+project(AudioCodec)
 
 set(CMAKE_CXX_STANDARD 11)
 
-include_directories(.)
+add_subdirectory(PCMCodec)
+add_subdirectory(WaveCodec)
+add_subdirectory(example bin)
 
-add_executable(PCMCodec
-        PCMCodec.hpp
-        test/test.cpp
-        WaveCodec.hpp)
+

@@ -72,8 +72,8 @@ namespace WaveCodec {
 
         // check RIFF chunk size
         if ((uint32_t)file_size != riff_chunk_size + sizeof(fourcc) + sizeof(riff_chunk_size)) {
-            printf("invalid wave file, size not match\n");
-            return false;
+            printf("warning: invalid wave file, size not match, ignore\n");
+            //return false;
         }
         m_header.riff.header.size = riff_chunk_size;
 
@@ -195,6 +195,7 @@ namespace WaveCodec {
 
     size_t WaveFileReader::ReadBytes(uint32_t bytes2Read, std::vector<uint8_t>& bytes){
         if(!m_fp) return 0;
+        if(bytes2Read == 0) return 0;
 
         bytes.resize(bytes2Read);
         size_t nRead = fread(&bytes[0], sizeof(uint8_t), bytes2Read, m_fp);
@@ -207,6 +208,7 @@ namespace WaveCodec {
 
     size_t WaveFileReader::ReadShorts(uint32_t shorts2Read, std::vector<uint16_t>& shorts){
         if(!m_fp) return 0;
+        if(shorts2Read == 0) return 0;
 
         shorts.resize(shorts2Read);
         size_t nRead = fread(&shorts[0], sizeof(uint16_t), shorts2Read, m_fp);

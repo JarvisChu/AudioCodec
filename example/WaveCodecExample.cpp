@@ -1,4 +1,4 @@
-#include "WaveCodec/WaveFile.h"
+﻿#include "WaveCodec/WaveFile.h"
 
 void print_usage(){
     printf("WaveCodecExample <option> [params...] \n");

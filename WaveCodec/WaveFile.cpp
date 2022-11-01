@@ -49,6 +49,21 @@ namespace WaveCodec {
         return true;
     }
 
+#ifdef WIN32
+    bool WaveFileReader::OpenW(const std::wstring& waveFilePath) {
+        if (waveFilePath.size() == 0) return false;
+        if (m_fp) return false;
+
+        errno_t err = _wfopen_s(&m_fp, waveFilePath.c_str(), L"rb");
+        if (err != 0) {
+            printf("open file failed\n");
+            return false;
+        }
+
+        return true;
+    }
+#endif
+
     bool WaveFileReader::ReadWaveHeader(WaveHeader& header){
         if(!m_fp) return false;
 
@@ -193,6 +208,18 @@ namespace WaveCodec {
         return true;
     }
 
+    bool WaveFileReader::SkipBytes(uint32_t bytes2Skip) {
+        if (!m_fp) return false;
+        return (0 == fseek(m_fp, bytes2Skip, SEEK_CUR));
+    }
+
+    size_t WaveFileReader::ReadBytes(uint32_t bytes2Read, uint8_t* bytes) {
+        if (!m_fp) return 0;
+        if (bytes2Read == 0 || bytes == nullptr) return 0;
+
+        return fread(bytes, sizeof(uint8_t), bytes2Read, m_fp);
+    }
+
     size_t WaveFileReader::ReadBytes(uint32_t bytes2Read, std::vector<uint8_t>& bytes){
         if(!m_fp) return 0;
         if(bytes2Read == 0) return 0;
@@ -204,6 +231,13 @@ namespace WaveCodec {
         }
 
         return nRead;
+    }
+
+    size_t WaveFileReader::ReadShorts(uint32_t shorts2Read, uint16_t* shorts) {
+        if (!m_fp) return 0;
+        if (shorts2Read == 0 || shorts == nullptr) return 0;
+
+        return fread(shorts, sizeof(uint16_t), shorts2Read, m_fp);
     }
 
     size_t WaveFileReader::ReadShorts(uint32_t shorts2Read, std::vector<uint16_t>& shorts){
@@ -218,18 +252,49 @@ namespace WaveCodec {
         return nRead;
     }
 
+    size_t WaveFileReader::ReadDuration(uint32_t durationMs, uint8_t* data) {
+        if (!m_fp) return 0;
+        if (durationMs == 0 || data == nullptr) return 0;
+
+        if (m_header.riff.fmt.audio_format != WaveAudioFormatPCM
+            && m_header.riff.fmt.audio_format != WaveAudioFormatALaw
+            && m_header.riff.fmt.audio_format != WaveAudioFormatMuLaw) {
+            return 0;
+        }
+
+        uint32_t bytesPerMs = (m_header.riff.fmt.sample_rate * m_header.riff.fmt.bits_per_sample / 8 * m_header.riff.fmt.channels) / 1000; // 每 ms 的字节数
+        uint32_t bytesPerDuration = bytesPerMs * durationMs;
+        return ReadBytes(bytesPerDuration, data);
+    }
+
     size_t WaveFileReader::ReadDuration(uint32_t durationMs, std::vector<uint8_t>& data){
         if(!m_fp) return 0;
+        if (durationMs == 0) return 0;
 
         if( m_header.riff.fmt.audio_format != WaveAudioFormatPCM
             && m_header.riff.fmt.audio_format != WaveAudioFormatALaw
             && m_header.riff.fmt.audio_format != WaveAudioFormatMuLaw){
-            return -1;
+            return 0;
         }
 
         uint32_t bytesPerMs = (m_header.riff.fmt.sample_rate * m_header.riff.fmt.bits_per_sample/8 * m_header.riff.fmt.channels) / 1000; // 每 ms 的字节数
         uint32_t bytesPerDuration = bytesPerMs * durationMs;
         return ReadBytes(bytesPerDuration, data);
+    }
+
+    size_t WaveFileReader::ReadDuration(uint32_t durationMs, uint16_t* data) {
+        if (!m_fp) return 0;
+        if (durationMs == 0 || data == nullptr) return 0;
+
+        if (m_header.riff.fmt.audio_format != WaveAudioFormatPCM
+            && m_header.riff.fmt.audio_format != WaveAudioFormatALaw
+            && m_header.riff.fmt.audio_format != WaveAudioFormatMuLaw) {
+            return 0;
+        }
+
+        uint32_t shortsPerMs = (m_header.riff.fmt.sample_rate * m_header.riff.fmt.bits_per_sample / 16 * m_header.riff.fmt.channels) / 1000; // 每 ms 的 short 个数
+        uint32_t shortsPerDuration = shortsPerMs * durationMs;
+        return ReadShorts(shortsPerDuration, data);
     }
 
     size_t WaveFileReader::ReadDuration(uint32_t durationMs, std::vector<uint16_t>& data){
@@ -238,7 +303,7 @@ namespace WaveCodec {
         if( m_header.riff.fmt.audio_format != WaveAudioFormatPCM
             && m_header.riff.fmt.audio_format != WaveAudioFormatALaw
             && m_header.riff.fmt.audio_format != WaveAudioFormatMuLaw){
-            return -1;
+            return 0;
         }
 
         uint32_t shortsPerMs = (m_header.riff.fmt.sample_rate * m_header.riff.fmt.bits_per_sample/16 * m_header.riff.fmt.channels) / 1000; // 每 ms 的 short 个数
@@ -265,12 +330,6 @@ namespace WaveCodec {
         if (audio_format != WaveAudioFormatPCM && audio_format != WaveAudioFormatALaw && audio_format != WaveAudioFormatMuLaw){
             return false;
         }
-        if (sample_bits != 8 && sample_bits != 16 && sample_bits != 32){
-            return false;
-        }
-        if (channels != 1 && channels != 2){
-            return false;
-        }
 
         if (m_fp) return false;
         m_fp = fopen(waveFilePath.c_str(), "wb");
@@ -290,6 +349,33 @@ namespace WaveCodec {
 
         return true;
     }
+
+#ifdef WIN32
+    bool WaveFileWriter::OpenW(const std::wstring& waveFilePath, uint16_t audio_format, uint32_t sample_rate, uint16_t sample_bits, uint16_t channels) {
+        if (waveFilePath.size() == 0) return false;
+        if (audio_format != WaveAudioFormatPCM && audio_format != WaveAudioFormatALaw && audio_format != WaveAudioFormatMuLaw) {
+            return false;
+        }
+
+        if (m_fp) return false;
+        errno_t err = _wfopen_s(&m_fp, waveFilePath.c_str(), L"wb");
+        if (err != 0 || m_fp == nullptr) {
+            printf("open file failed\n");
+            return false;
+        }
+
+        m_data_len = 0;
+        m_header.riff.fmt.audio_format = audio_format;
+        m_header.riff.fmt.sample_rate = sample_rate;
+        m_header.riff.fmt.bits_per_sample = sample_bits;
+        m_header.riff.fmt.channels = channels;
+
+        // 文件开头保留 header_size 字节，用于回填 wave header
+        fseek(m_fp, m_header.GetHeaderSize(), SEEK_CUR);
+
+        return true;
+    }
+#endif
 
     void WaveFileWriter::Write(const uint8_t* data, uint32_t len){
         if(!m_fp) return;

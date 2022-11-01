@@ -179,42 +179,48 @@ namespace WaveCodec {
     // * 返回值       : audio_format 对于的描述
     std::string GetWaveAudioFormatString(uint16_t audio_format);
 
+    /*example code
+    
+        WaveFileReader reader;
+        reader.Open("test.wav");
+        WaveHeader header;
+        reader.ReadWaveHeader(header);
+        std::vector<uint8_t> buffer;
+        while(true){
+            size_t nRead = reader.ReadBytes(1024, buffer);
+            if(nRead == 0) {
+                break;
+            }
+            // process buffer as you want
+        }
+        reader.Close();
+    */
     class WaveFileReader{
     public:
         WaveFileReader();
         ~WaveFileReader();
-
-        // Open: 打开Wave文件
-        // * waveFilePath: Wave 文件的路径
-        // * 返回值       : 打开文件是否成功
         bool Open(const std::string& waveFilePath);
 
-        // GetWaveHeader: 获取 wave 的 header信息
-        // * header: 用于返回 wave header 信息
-        // * 返回值 : 如果wave格式不合法，返回false，否则返回true
+#ifdef WIN32
+        bool OpenW(const std::wstring& waveFilePath);
+#endif
         bool ReadWaveHeader(WaveHeader& header);
 
-        // ReadBytes: 从Wave文件中读取指定字节数的音频数据（不包含WaveHeader）
-        // 如果剩余数据不足，则全部读取到bytes中
-        // * bytes2Read : 要读取的字节数量
-        // * bytes      : 存放读取到的字节数据，会存放在 bytes 中
-        // * 返回值      : 实际读取到的字节数
+        // SkipBytes: 从文件流的当前位置跳过指定的长度的数据
+        bool SkipBytes(uint32_t bytes2Skip);
+
+        // ReadBytes: 从Wave文件中读取指定字节数的音频数据，返回实际读取到的字节数
+        size_t ReadBytes(uint32_t bytes2Read, uint8_t* bytes);
         size_t ReadBytes(uint32_t bytes2Read, std::vector<uint8_t>& bytes);
 
-        // ReadShorts: 从Wave文件中读取指定数量的short类型音频数据（不包含WaveHeader）
-        // 即按 short 类型读取Wave，并保存到shorts中
-        // 如果剩余数据不足，则全部读取到shorts中
-        // * shorts2Read : 要读取的short数量
-        // * shorts      : 存放读取到的short数据，会存放在 shorts 中
-        // * 返回值      : 实际读取到的 short 个数
+        // ReadShorts: 从Wave文件中读取指定数量的short类型音频数据，返回实际读取到的 short 个数
+        size_t ReadShorts(uint32_t shorts2Read, uint16_t* shorts);
         size_t ReadShorts(uint32_t shorts2Read, std::vector<uint16_t>& shorts);
 
-        // ReadDuration: 读取指定时长的音频数据，仅支持 PCM/ALaw/ULaw 格式，其它格式返回-1
-        // 如果剩余数据不足 durationMs，则全部读取到data中，即如果data返回长度为0，则表明全部读取完了
-        // * durationMs: 要读取的时长，单位毫秒
-        // * data      : 读取到的音频数据，会存放在 data 中
-        // * 返回值     : 实际读取到的数据个数，即 uint8_t 或者 uint16_t 的个数。出错返回-1
+        // ReadDuration: 读取指定时长(毫秒)的音频数据，仅支持 PCM/ALaw/ULaw 格式，返回实际读取到大小
+        size_t ReadDuration(uint32_t durationMs, uint8_t* data);
         size_t ReadDuration(uint32_t durationMs, std::vector<uint8_t>& data);
+        size_t ReadDuration(uint32_t durationMs, uint16_t* data);
         size_t ReadDuration(uint32_t durationMs, std::vector<uint16_t>& data);
 
         // Close: 关闭PCM文件
@@ -229,19 +235,16 @@ namespace WaveCodec {
         WaveFileWriter();
         ~WaveFileWriter();
 
-        // Open: 打开Wave文件
-        // * waveFilePath: Wave 文件的路径
-        // * audio_format: Wave文件的音频格式，目前仅支持WaveAudioFormatPCM/WaveAudioFormatALaw/WaveAudioFormatMuLaw
-        // * sample_rate : 采样率
-        // * sample_bits : 采样位深，仅支持8/16/32
-        // * channels    : 声道数，仅支持1/2
-        // * 返回值       : 打开文件是否成功
+        // Open wave file for write
+        // audio_format: Wave文件的音频格式，目前仅支持WaveAudioFormatPCM/WaveAudioFormatALaw/WaveAudioFormatMuLaw
         bool Open(const std::string& waveFilePath, uint16_t audio_format, uint32_t sample_rate, uint16_t sample_bits, uint16_t channels);
 
+#ifdef WIN32
+        bool OpenW(const std::wstring& waveFilePath, uint16_t audio_format, uint32_t sample_rate, uint16_t sample_bits, uint16_t channels);
+#endif
+
+
         // Write: 将数据写入PCM文件
-        // 支持各种参数类型
-        // * data: 要写入的数据
-        // * len : 要写入的长度
         void Write(const uint8_t* data, uint32_t len);
         void Write(const uint16_t* data, uint32_t len);
         void Write(const std::vector<uint8_t>& data);
@@ -249,7 +252,6 @@ namespace WaveCodec {
         void Write(const std::vector<uint16_t>& data);
         void Write(const std::vector<uint16_t>& data, size_t len);
 
-        // Close: 关闭PCM文件
         void Close();
     private:
 

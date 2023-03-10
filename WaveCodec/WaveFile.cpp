@@ -394,18 +394,22 @@ namespace WaveCodec {
     }
 
     void WaveFileWriter::Write(const std::vector<uint8_t>& data){
+        if(data.size() == 0) return;
         Write(&data[0], data.size());
     }
 
     void WaveFileWriter::Write(const std::vector<uint8_t>& data, size_t len){
+        if(data.size() == 0) return;
         Write(&data[0], len);
     }
 
     void WaveFileWriter::Write(const std::vector<uint16_t>& data){
+        if(data.size() == 0) return;
         Write(&data[0], data.size());
     }
 
     void WaveFileWriter::Write(const std::vector<uint16_t>& data, size_t len){
+        if(data.size() == 0) return;
         Write(&data[0], len);
     }
 
